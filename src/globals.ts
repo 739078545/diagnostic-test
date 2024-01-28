@@ -11,9 +11,7 @@ export const TOKEN = "6se7z2q8WGtkxBlXp_YpU-oPq53Av-y_GSYiKyS_COn6AzFuTjj4BQ==";
 export const GET_DEFAULT_HEADERS = () => {
   var headers = new Headers();
   // You will need to add another header here
-  headers = {
-    "x-functions-key": TOKEN
-  };
+  headers.append('TOKEN', TOKEN);
   // If you do not, the API will reject your request (:
   return headers;
 };
