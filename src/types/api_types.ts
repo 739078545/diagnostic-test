@@ -17,3 +17,24 @@ export interface IUniversityClass {
   status: string;
   semester: string;
 }
+
+export interface IStudent {
+  dateEnrolled: string;
+  name: string;
+  status: string;
+  universityId: string;
+}
+export interface IGradeTable {
+  studentList: string[];
+  studentNameList: string[];
+  currClassId: string;
+  classList: IUniversityClass[];
+  finalGrade: number[];
+}
+
+export interface IAssignmentWeights {
+  assignmentId: string;
+  classId: string;
+  date: string;
+  weight: number;
+}
