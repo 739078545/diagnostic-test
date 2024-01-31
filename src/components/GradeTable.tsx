@@ -22,7 +22,7 @@ export function dummyData() {
  * You might need to change the signature of this function.
  *
  */
-export const GradeTable : React.FC<IGradeTable> = ({studentList, studentNameList, currClassId, classList, finalGrade}) => {
+export const GradeTable : React.FC<IGradeTable> = ({studentList, studentNameList, selectedClassId, classList, studentGrade}) => {
   return (
     <TableContainer component={Paper}>
     <Table>
@@ -41,10 +41,10 @@ export const GradeTable : React.FC<IGradeTable> = ({studentList, studentNameList
           <TableRow key={studentId}>
           <TableCell>{studentId}</TableCell>
           <TableCell>{studentNameList[index]}</TableCell>
-          <TableCell>{currClassId}</TableCell>
-          <TableCell>{classList.find((item) => item.classId === currClassId)?.title}</TableCell>
+          <TableCell>{selectedClassId}</TableCell>
+          <TableCell>{classList.find((item) => item.classId === selectedClassId)?.title}</TableCell>
           <TableCell>Fall 2022</TableCell>
-          <TableCell>{finalGrade[index]}</TableCell>
+          <TableCell>{studentGrade[index]}</TableCell>
           </TableRow>
         ))}
       </TableBody>

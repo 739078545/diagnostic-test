@@ -1,25 +1,17 @@
 import React, { useEffect, useState } from "react";
-import Grid from "@mui/material/Unstable_Grid2";
-import { Select, Typography } from "@mui/material";
-import MenuItem from '@mui/material/MenuItem';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
-
-/**
- * You will find globals from this file useful!
- */
-import {GET_DEFAULT_HEADERS, BASE_API_URL, MY_BU_ID} from "./globals";
-import { IUniversityClass, IStudent, IAssignmentWeights} from "./types/api_types";
-import {GradeTable} from "./components/GradeTable";
-import {calcAllFinalGrade} from "./utils/calculate_grade";
-import { log } from "console";
+import { Grid, Select, Typography, MenuItem } from "@mui/material";
+import { GET_DEFAULT_HEADERS, BASE_API_URL, MY_BU_ID } from "./globals";
+import { IUniversityClass } from "./types/api_types";
+import { GradeTable } from "./components/GradeTable";
+import { calculateAllStudentGrades } from "./utils/calculate_grade";
 
 function App() {
   // You will need to use more of these!
-  const [currClassId, setCurrClassId] = useState<string>("");
-  const [classList, setClassList] = useState<IUniversityClass[]>([]);
-  const [studentList, setStudentList] = useState<string[]>([]);
-  const [studentNameList, setStudentNameList] = useState<string[]>([]);
-  const [finalGrade, setFinalGrade] = useState<number[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [classes, setClasses] = useState<IUniversityClass[]>([]);
+  const [students, setStudents] = useState<string[]>([]);
+  const [studentNames, setStudentNames] = useState<string[]>([]);
+  const [grades, setGrades] = useState<number[]>([]);
 
   /**
    * This is JUST an example of how you might fetch some data(with a different API).
@@ -35,110 +27,93 @@ function App() {
    * You will also need to explore the use of async/await.
    *
    */
-  const fetchClassList = async() => {
-    const res = await fetch('https://spark-se-assessment-api.azurewebsites.net/api/class/listBySemester/fall2022?buid=U83682995',
-    {
-      method: 'GET',
-      headers: GET_DEFAULT_HEADERS() 
-    }
-    )
-    if (!res.ok) {
-      throw new Error('Failed to fetch class list');
-    }
-    const data = await res.json();
-    setClassList(data);
-    const classIds = data.map((string: { classId: any; }) => string.classId);
-    return classIds;
-  }
-
-  const fetchStudentList = async () => {
-    try {
-      if (currClassId) {
-       // console.log("current classs ID: ", currClassId);
-
-        const res = await fetch(
-          `${BASE_API_URL}/class/listStudents/${currClassId}?buid=${MY_BU_ID}`,
-          {
-            method: 'GET',
-            headers: GET_DEFAULT_HEADERS(),
-          }
-        );
-
-        if (!res.ok) {
-          throw new Error('Failed to fetch student list');
-        }
-
-        const data = await res.json();
-        setStudentList(data);
-      }
-    } catch (error) {
-      console.error('Error fetching student list:');
-    }
-  }
-  
-  const fetchStudentNameList = async () => {
-    try {
-      const names = await Promise.all(
-        studentList.map(async (studentId) => {
-        const res = await fetch(
-          `${BASE_API_URL}/student/GetById/${studentId}?buid=${MY_BU_ID}`,
-          {
-            method: 'GET',
-            headers: GET_DEFAULT_HEADERS(),
-          }
-        );
-
-        if (!res.ok) {
-          throw new Error('Failed to fetch studentID');
-        }
-
-        const data = await res.json();
-            return data[0]?.name 
-          })
-        );
-        setStudentNameList(names);
+  useEffect(() => {
+    async function fetchClasses() {
+      try {
+        const response = await fetch(`${BASE_API_URL}/class/listBySemester/fall2022?buid=${MY_BU_ID}`, {
+          method: 'GET',
+          headers: GET_DEFAULT_HEADERS()
+        });
+        if (!response.ok) throw new Error('Failed to fetch classes');
+        const data = await response.json();
+        setClasses(data);
       } catch (error) {
-        console.error('Error fetching student list:');
+        console.error('Error fetching classes:', error);
+      }
     }
-  }
-
-  const fetchData = async () => {
-    try {
-      const finalGrade = await calcAllFinalGrade(currClassId, studentList);
-      setFinalGrade(finalGrade);
-    //  console.log("calcAllFinalGrade returns", finalGrade);
-    } catch (error) {
-      console.error("Error fetching final grade:", error);
-    }
-  };
+    fetchClasses();
+  }, []);
 
   useEffect(() => {
-    fetchClassList();
-  }, []);
+    async function fetchStudents() {
+      try {
+        if (!selectedClassId) return;
+        const response = await fetch(`${BASE_API_URL}/class/listStudents/${selectedClassId}?buid=${MY_BU_ID}`, {
+          method: 'GET',
+          headers: GET_DEFAULT_HEADERS()
+        });
+        if (!response.ok) throw new Error('Failed to fetch students');
+        const data = await response.json();
+        setStudents(data);
+      } catch (error) {
+        console.error('Error fetching students:', error);
+      }
+    }
+    fetchStudents();
+  }, [selectedClassId]);
+
+  useEffect(() => {
+    async function fetchStudentNames() {
+      try {
+        const names = await Promise.all(students.map(async (studentId) => {
+          const response = await fetch(`${BASE_API_URL}/student/GetById/${studentId}?buid=${MY_BU_ID}`, {
+            method: 'GET',
+            headers: GET_DEFAULT_HEADERS()
+          });
+          if (!response.ok) throw new Error(`Failed to fetch student name for ID: ${studentId}`);
+          const data = await response.json();
+          return data[0]?.name;
+        }));
+        setStudentNames(names);
+      } catch (error) {
+        console.error('Error fetching student names:', error);
+      }
+    }
+    if (students.length > 0) fetchStudentNames();
+  }, [students]);
+
+  useEffect(() => {
+    async function fetchGrades() {
+      try {
+        const grades = await calculateAllStudentGrades(selectedClassId, students);
+        setGrades(grades);
+      } catch (error) {
+        console.error('Error fetching grades:', error);
+      }
+    }
+    if (students.length > 0) fetchGrades();
+  }, [students]);
+
 
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
       <Grid container spacing={2} style={{ padding: "1rem" }}>
-        <Grid xs={12} container alignItems="center" justifyContent="center">
-          <Typography variant="h2" gutterBottom>
-            Spark Assessment
-          </Typography>
+        <Grid item xs={12} container alignItems="center" justifyContent="center">
+          <Typography variant="h2" gutterBottom>Spark Assessment</Typography>
         </Grid>
-        <Grid xs={12} md={4}>
-          <Typography variant="h4" gutterBottom>
-            Select a class
-          </Typography>
-          <div style={{ width: "100%" }}>
-            <Select fullWidth={true} label="Class">
-              {/* You'll need to place some code here to generate the list of items in the selection */}
-            </Select>
-          </div>
+        <Grid item xs={12} md={4}>
+          <Typography variant="h4" gutterBottom>Select a class</Typography>
+          <Select fullWidth label="Class" value={selectedClassId} onChange={(e) => setSelectedClassId(e.target.value as string)}>
+            {classes.map((classItem) => (
+              <MenuItem key={classItem.classId} value={classItem.classId}>
+                {classItem.title}
+              </MenuItem>
+            ))}
+          </Select>
         </Grid>
-        <Grid xs={12} md={8}>
-          <Typography variant="h4" gutterBottom>
-            Final Grades
-          </Typography>
-          <div>Place the grade table here</div>
+        <Grid item xs={12} md={8}>
+          <Typography variant="h4" gutterBottom>Final Grades</Typography>
+          <GradeTable studentList={students} studentNameList={studentNames} selectedClassId={selectedClassId} classList={classes} studentGrade={grades} />
         </Grid>
       </Grid>
     </div>

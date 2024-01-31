@@ -27,9 +27,9 @@ export interface IStudent {
 export interface IGradeTable {
   studentList: string[];
   studentNameList: string[];
-  currClassId: string;
+  selectedClassId: string;
   classList: IUniversityClass[];
-  finalGrade: number[];
+  studentGrade: number[];
 }
 
 export interface IAssignmentWeights {
