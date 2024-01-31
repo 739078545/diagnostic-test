@@ -1,16 +1,25 @@
 import React, { useEffect, useState } from "react";
 import Grid from "@mui/material/Unstable_Grid2";
 import { Select, Typography } from "@mui/material";
+import MenuItem from '@mui/material/MenuItem';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+
 /**
  * You will find globals from this file useful!
  */
-import {} from "./globals";
-import { IUniversityClass } from "./types/api_types";
+import {GET_DEFAULT_HEADERS, BASE_API_URL, MY_BU_ID} from "./globals";
+import { IUniversityClass, IStudent, IAssignmentWeights} from "./types/api_types";
+import {GradeTable} from "./components/GradeTable";
+import {calcAllFinalGrade} from "./utils/calculate_grade";
+import { log } from "console";
 
 function App() {
   // You will need to use more of these!
   const [currClassId, setCurrClassId] = useState<string>("");
   const [classList, setClassList] = useState<IUniversityClass[]>([]);
+  const [studentList, setStudentList] = useState<string[]>([]);
+  const [studentNameList, setStudentNameList] = useState<string[]>([]);
+  const [finalGrade, setFinalGrade] = useState<number[]>([]);
 
   /**
    * This is JUST an example of how you might fetch some data(with a different API).
@@ -26,13 +35,86 @@ function App() {
    * You will also need to explore the use of async/await.
    *
    */
-  const fetchSomeData = async () => {
-    const res = await fetch("https://cat-fact.herokuapp.com/facts/", {
-      method: "GET",
-    });
-    const json = await res.json();
-    console.log(json);
+  const fetchClassList = async() => {
+    const res = await fetch('https://spark-se-assessment-api.azurewebsites.net/api/class/listBySemester/fall2022?buid=U83682995',
+    {
+      method: 'GET',
+      headers: GET_DEFAULT_HEADERS() 
+    }
+    )
+    if (!res.ok) {
+      throw new Error('Failed to fetch class list');
+    }
+    const data = await res.json();
+    setClassList(data);
+    const classIds = data.map((string: { classId: any; }) => string.classId);
+    return classIds;
+  }
+
+  const fetchStudentList = async () => {
+    try {
+      if (currClassId) {
+       // console.log("current classs ID: ", currClassId);
+
+        const res = await fetch(
+          `${BASE_API_URL}/class/listStudents/${currClassId}?buid=${MY_BU_ID}`,
+          {
+            method: 'GET',
+            headers: GET_DEFAULT_HEADERS(),
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error('Failed to fetch student list');
+        }
+
+        const data = await res.json();
+        setStudentList(data);
+      }
+    } catch (error) {
+      console.error('Error fetching student list:');
+    }
+  }
+  
+  const fetchStudentNameList = async () => {
+    try {
+      const names = await Promise.all(
+        studentList.map(async (studentId) => {
+        const res = await fetch(
+          `${BASE_API_URL}/student/GetById/${studentId}?buid=${MY_BU_ID}`,
+          {
+            method: 'GET',
+            headers: GET_DEFAULT_HEADERS(),
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error('Failed to fetch studentID');
+        }
+
+        const data = await res.json();
+            return data[0]?.name 
+          })
+        );
+        setStudentNameList(names);
+      } catch (error) {
+        console.error('Error fetching student list:');
+    }
+  }
+
+  const fetchData = async () => {
+    try {
+      const finalGrade = await calcAllFinalGrade(currClassId, studentList);
+      setFinalGrade(finalGrade);
+    //  console.log("calcAllFinalGrade returns", finalGrade);
+    } catch (error) {
+      console.error("Error fetching final grade:", error);
+    }
   };
+
+  useEffect(() => {
+    fetchClassList();
+  }, []);
 
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
