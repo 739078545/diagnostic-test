@@ -6,12 +6,9 @@
  *
  * Anything that has a type of "undefined" you will need to replace with something.
  */
-import React, { useEffect, useState } from "react";
 
 
-import { IUniversityClass, IAssignmentWeights} from "../types/api_types";
 import {GET_DEFAULT_HEADERS, BASE_API_URL, MY_BU_ID} from "../globals";
-import fetchStudentList from "../App";
 
 /**
  * This function might help you write the function below.
