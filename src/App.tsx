@@ -92,7 +92,7 @@ function App() {
       }
     }
     if (students.length > 0) fetchGrades();
-  }, [students]);
+  }, [selectedClassId,students]);
 
 
   return (
